@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Facades\ApiResponse;
+use App\Services\Caching;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,11 +27,22 @@ class CategoryResource extends JsonResource
         ];
     }
 
-    public function withResponse(Request $request, \Illuminate\Http\JsonResponse $response)
+    public function withResponse(Request $request, \Illuminate\Http\JsonResponse $response): \Illuminate\Http\JsonResponse
     {
+        // $response->headers->set('Content-Type', 'application/json');
         return ApiResponse::success(
-            $this->getData(true),
+            $this->resource,
             'Category fetched successfully'
         );
+    }
+
+    public function with(Request $request)
+    {
+        return [
+            'meta' => [
+                'status' => 'success',
+                'message' => 'Data fetched successfully',
+            ],
+        ];
     }
 }
