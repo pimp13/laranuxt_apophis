@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class ApiResponse
 {
@@ -14,7 +15,7 @@ class ApiResponse
      * @param int $statusCode
      * @return JsonResponse
      */
-    public function success($data = null, $message = 'Success', $statusCode = 200): JsonResponse
+    public function success($data = null, $message = 'Success', $statusCode = Response::HTTP_OK): JsonResponse
     {
         return response()->json([
             'status' => 'success',
@@ -31,7 +32,7 @@ class ApiResponse
      * @param int $statusCode
      * @return JsonResponse
      */
-    public function error($message = 'Error', $data = null, $statusCode = 400): JsonResponse
+    public function error($message = 'Error', $data = null, $statusCode = Response::HTTP_NOT_FOUND): JsonResponse
     {
         return response()->json([
             'status' => 'error',
@@ -43,11 +44,11 @@ class ApiResponse
     /**
      * Send response no context data (No Content 204)
      *
-     * @param string $message پیام
-     * @param int $statusCode کد وضعیت HTTP (پیش‌فرض 204)
+     * @param string $message
+     * @param int $statusCode 
      * @return JsonResponse
      */
-    public function noContent($message = 'No Content', $statusCode = 204): JsonResponse
+    public function noContent($message = 'No Content', $statusCode = Response::HTTP_NO_CONTENT): JsonResponse
     {
         return response()->json([
             'status' => 'success',

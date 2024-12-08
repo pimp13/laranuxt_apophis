@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -59,5 +61,29 @@ class User extends Authenticatable
     public function articles(): HasMany
     {
         return $this->hasMany(Article::class);
+    }
+
+    protected function fullName(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->first_name && $this->last_name) {
+                    return "{$this->first_name} {$this->last_name}";
+                } elseif ($this->first_name) {
+                    return $this->first_name;
+                } elseif ($this->last_name) {
+                    return $this->last_name;
+                } else {
+                    return "ناشناس";
+                }
+            }
+        );
+    }
+
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => strtolower($value),
+        );
     }
 }

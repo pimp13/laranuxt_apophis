@@ -3,67 +3,87 @@
 namespace App\Http\Controllers\Api;
 
 use App\Facades\ApiResponse;
+use App\Facades\Caching;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\ArticleCategory;
-use App\Services\Caching;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+// use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    private Caching $cache;
+    private $cacheKeyAllData = 'categories.all';
 
-    public function __construct(Caching $caching)
-    {
-        $this->cache = $caching;
-    }
     /**
-     * Display a listing of the resource.
+     * HTTP GET
+     * api/category
      */
-    public function index()
+    public function index(ApiResponse $response): JsonResponse
     {
         $categories = ArticleCategory::latest()->get();
-        $this->cache->store('categories_all', $categories);
-        return CategoryResource::collection($categories);
+        Caching::rememberNoCallback($this->cacheKeyAllData, $categories);
+        if ($categories->count() == 0) {
+            return $response::noContent("No Categories Available");
+        }
+        return $response::success(CategoryResource::collection($categories));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * HTTP POST
+     * api/category
      */
-    public function store(Request $request)
+    public function store(CategoryRequest $request): JsonResponse
     {
-        $validate = $request->validate([
-            'name' => 'required|string|max:70|min:4',
-            'description' => 'required|string|max:160|min:4',
-            'is_active' => 'nullable|in:0,1|boolean|numeric',
-        ]);
-
-        ArticleCategory::create($validate);
-        $this->cache->forget('categories_all');
-        return ApiResponse::success($validate, 'category created successfully');
+        $createdCategory = ArticleCategory::create($request->validated());
+        // $this->cache->forget(self::cacheKeyAllData);
+        return ApiResponse::success(new CategoryResource($createdCategory));
     }
 
     /**
-     * Display the specified resource.
+     * HTTP GET
+     * api/category/{id}
      */
-    public function show(string $id)
+    public function show(ArticleCategory $category): JsonResponse
     {
-        //
+        $cacheKey = "category.{$category->id}";
+        // Get cached data if it exists
+        if (Caching::has($cacheKey)) {
+            $dataCached = Caching::get($cacheKey);
+            return ApiResponse::success(new CategoryResource($dataCached));
+        }
+        Caching::store($cacheKey, $category);
+        return ApiResponse::success(new CategoryResource($category));
     }
 
     /**
-     * Update the specified resource in storage.
+     * HTTP PUT/PTACH
+     * api/category/{id}
      */
-    public function update(Request $request, string $id)
+    public function update(CategoryRequest $request, ArticleCategory $category): JsonResponse
     {
-        //
+        $category->update($request->validated());
+        // Caching updated data
+        $cacheKey = "category.{$category->id}";
+        if (Caching::has($cacheKey)) {
+            $dataCached = Caching::get($cacheKey);
+            return ApiResponse::success(new CategoryResource($dataCached));
+        }
+        Caching::store($cacheKey, $category);
+        return ApiResponse::success(new CategoryResource($category));
     }
 
     /**
-     * Remove the specified resource from storage.
+     * HTTP DELETE
+     * api/category/{id}
      */
-    public function destroy(string $id)
+    public function destroy(ArticleCategory $category)
     {
-        //
+        $cacheKey = "category.{$category->id}";
+        if (Caching::has($cacheKey)) {
+            Caching::forget($cacheKey);
+        }
+        $category->delete();
+        return ApiResponse::success(new CategoryResource($category));
     }
 }

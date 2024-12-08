@@ -20,29 +20,15 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
-            'is_active' => $this->is_active,
+            'isActive' => $this->is_active,
             'slug' => $this->slug,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];
     }
 
-    public function withResponse(Request $request, \Illuminate\Http\JsonResponse $response): \Illuminate\Http\JsonResponse
-    {
-        // $response->headers->set('Content-Type', 'application/json');
-        return ApiResponse::success(
-            $this->resource,
-            'Category fetched successfully'
-        );
-    }
-
-    public function with(Request $request)
-    {
-        return [
-            'meta' => [
-                'status' => 'success',
-                'message' => 'Data fetched successfully',
-            ],
-        ];
-    }
+    // public function with(Request $request): array
+    // {
+    //     return [];
+    // }
 }

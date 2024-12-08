@@ -2,73 +2,31 @@
 
 namespace App\Services;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
+use Closure;
 
 class Caching
 {
-    private Cache $cache;
-    private const CACHE_EXPIRATION = 120;
-
-    public function __construct(Cache $cache)
+    public function store(string $key, $data, int $minutes = 10)
     {
-        $this->cache = $cache;
-    }
-    /**
-     * Saving data to cache
-     *
-     * @param string $key
-     * @param mixed $data
-     * @param int $minutes
-     * @return void
-     */
-    public function store(string $key, $data, int $minutes = self::CACHE_EXPIRATION)
-    {
-        $this->cache->put($key, $data, now()->addMinutes($minutes));
+        cache()->put($key, $data, $minutes);
     }
 
-    /**
-     * Get data from cache
-     *
-     * @param string $key
-     * @return mixed
-     */
     public function get(string $key): mixed
     {
-        return $this->cache->get($key);
+        return cache()->get($key);
     }
 
-    /**
-     * Delete data from cache
-     *
-     * @param string $key
-     * @return void
-     */
     public function forget(string $key): void
     {
-        $this->cache->forget($key);
+        cache()->forget($key);
     }
 
-    /**
-     * is Check exists data from cache
-     *
-     * @param string $key
-     * @return bool
-     */
     public function has(string $key): bool
     {
-        return $this->cache->has($key);
+        return cache()->has($key);
     }
 
-    /**
-     * چک کردن وجود داده در کش و اگر نبود، کش را به‌روز رسانی کند.
-     * در صورت وجود کش، آن را پاک کرده و کش جدید ذخیره کند.
-     *
-     * @param string $key
-     * @param mixed $data
-     * @param int $minutes
-     * @return mixed
-     */
-    public function refresh(string $key, $data, int $minutes = 60)
+    public function refresh(string $key, $data, int $minutes = 10): mixed
     {
         // اگر کش وجود دارد، آن را پاک می‌کنیم
         if ($this->has($key)) {
@@ -81,17 +39,36 @@ class Caching
         return $data; // برگرداندن داده جدید
     }
 
-    /**
-     * چک کردن وجود داده در کش و اگر نبود، کش را به‌روز رسانی کند.
-     * در صورت وجود کش، آن را برگرداند.
-     *
-     * @param string $key
-     * @param mixed $data
-     * @param int $minutes
-     * @return mixed
-     */
-    public function remember(string $key, $data, int $minutes = 60)
+    public function rememberNoCallback(string $key, $data, int $minutes = 10): mixed
     {
-        $this->cache->remember($key, $minutes, fn() => $data);
+        if ($this->has($key)) {
+            return $this->get($key);
+        } else {
+            $this->store($key, $data, $minutes);
+        }
+        return $data;
+    }
+
+    public function remember(string $key, Closure $callback = null, int $minutes = 10): void
+    {
+        cache()->remember($key, $minutes, $callback);
+    }
+
+    public function pagination(string $model, $data, $minutes = 10): mixed
+    {
+        $curretPage = request()->get('page', 1);
+        $keyGenerate =  $model . "_page_" . $curretPage;
+
+        return $this->rememberNoCallback($keyGenerate, $data, $minutes);
+    }
+
+    public function keyFirstDataGenarator(string $key, string $modelId): string
+    {
+        return $key . "." . $modelId;
+    }
+
+    public function keyAllDataGenarator(string $key): string
+    {
+        return $key . "." . "all";
     }
 }
